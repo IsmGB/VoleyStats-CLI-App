@@ -1,0 +1,7 @@
+{
+    "paths": {
+        "reports": "saves/excelreports",
+        "raw": "saves/raw",
+        "teams": "saves/teams"
+    }
+}

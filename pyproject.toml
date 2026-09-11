@@ -1,0 +1,16 @@
+[project]
+name = "voleystats"
+version = "0.1.0"
+dependencies = [
+    "click",
+    "pandas,
+    "xslxwriter",
+    "matplotlib"
+]
+
+[project.scripts]
+voleystats = "voleystats.main:voleystats"
+
+[build-system]
+requires = ["setuptools>=82"]
+build-backend = "setuptools.build_meta"
