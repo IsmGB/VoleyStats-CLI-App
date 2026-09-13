@@ -107,14 +107,14 @@ def voleystats(filename: str, excelfile: str, raw: Optional[str], home: Optional
         excel.build_worksheet_data('home')
         excel.build_worksheet_data('away')
 
-        # excel.build_worksheet_atack('home')
-        # excel.build_worksheet_atack('away')
+        excel.build_worksheet_atack('home')
+        excel.build_worksheet_atack('away')
 
-        # excel.build_worksheet_serve('home')
-        # excel.build_worksheet_serve('away')
+        excel.build_worksheet_serve('home')
+        excel.build_worksheet_serve('away')
 
-        # excel.build_worksheet_receive('home')
-        # excel.build_worksheet_receive('away')
+        excel.build_worksheet_receive('home')
+        excel.build_worksheet_receive('away')
         
         excel.build_worksheet_objetives()
         return

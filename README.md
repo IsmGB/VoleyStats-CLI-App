@@ -52,6 +52,19 @@ a13ST5Z5.1 2K1 7X2# p
 
 Player nº 13 from the away team performs a tense/float serve from zone 5 of their court to zone 5 of the opponent's court. Player nº 1 from the home team performs a reception rated as positive `+` (rating omitted by default). Next, player nº 2 from the home team performs a `K1` attack call rated as positive. Finally, player nº 7 from the home team performs an `X2` attack call, ending the rally with a successful action. The point is awarded to the home team.
 
+## App example
+
+Install the application in the working directory:
+```
+pip install -e .
+```
+
+Execute a exmple report:
+```
+voleystats voleystats_example.txt excel_example.xlsx --raw raw_example.txt --home home.json
+```
+
+
 ## Roadmap
 
 VoleyStats CLI is currently a beta application. New features and bug fixes will be implemented in successive versions.
