@@ -1,4 +1,7 @@
 .venv/
 tmp/
-**/cvr_2526.json
+src/voleystats.egg-info
+
 README_ES.md
+**/cvr_2526.json
+**/__pycache__
