@@ -3,5 +3,9 @@
         "reports": "saves/excelreports",
         "raw": "saves/raw",
         "teams": "saves/teams"
+    },
+    "lang": {
+        "en": "src/local/en/texts.json",
+        "es": "src/local/es/texts.json"
     }
 }

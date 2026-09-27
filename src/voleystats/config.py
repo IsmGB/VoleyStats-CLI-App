@@ -31,6 +31,7 @@ class Config:
 
         config = self._load_config()
         Config.PATHS = self._get_dir_paths(config)
+        self.texts = self._load_texts(config['lang']['es'])
 
         self.excelfile = set_excelfile(Path(excelfile))
 
@@ -108,6 +109,12 @@ class Config:
                 i += 1
             return filename
         raise ValueError(f"'{ans}' is not a valid choice. Exit program.")
+    
+
+    def _load_texts(self, lang: str) -> Any:
+        lang_file = Path(__file__).resolve().parents[2] / lang
+        with lang_file.open(encoding='utf-8') as f:
+            return json.load(f)
 
         
 
