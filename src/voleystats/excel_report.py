@@ -88,14 +88,17 @@ class ExcelReport:
 
     def __init__(self, excelfile: Path, df: pd.DataFrame, players: dict[str, dict[int,dict[str,str]]|None]={}):
         def import_df(df: pd.DataFrame) -> pd.DataFrame:
-            df[2] = df[2].replace({e.value: e.name.lower() for e in NmonTeam})
-            df = df.join(df[1].apply(pd.Series)).drop(columns=1)
+            df = df[['set', 'team', 'player', 'skill', 'hit', 'value', 'ext', 'zone', 'zHome', 'zAway']]
+            df['team'] = df['team'].replace({e.value: e.name.lower() for e in NmonTeam})
+            # df = df.join(df[1].apply(pd.Series)).drop(columns=1)
             df.columns = ExcelReport.DF_COLUMNS
             return df
         
         def build_groups(df: pd.DataFrame) -> dict[Teams, dict[Scalar, Any]]:
             # Dataframe shaping
-            df = df.join(df[1].apply(pd.Series)).drop(columns=1)
+            # df = df.join(df[1].apply(pd.Series)).drop(columns=1)
+            df = df[['set', 'team', 'player', 'skill', 'hit', 'value', 'ext', 'zone', 'zHome', 'zAway']]
+            df['team'] = df['team'].replace({e.value: e.name.lower() for e in NmonTeam})
             df.columns = self.DF_COLUMNS
             df = df.join(
                 pd.get_dummies(
@@ -399,7 +402,7 @@ class ExcelReport:
 
             name = names.get(num, num)
             self._write_header(worksheet, row, 0, columns, frmt['header'])
-            worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
+            # worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
             row += 1
             # Write attack for each hit-ext
             num_start = row
@@ -506,7 +509,7 @@ class ExcelReport:
 
             name = names.get(num, num)
             self._write_header(worksheet, row, 0, columns, frmt['header'])
-            worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
+            # worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
             row += 1
 
             num_start = row
@@ -588,7 +591,7 @@ class ExcelReport:
 
             name = names.get(num, num)
             self._write_header(worksheet, row, 0, columns, frmt['header'])
-            worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
+            # worksheet.write(row, 18, "Emblems", frmt['header']) #INSIGNIAS
             row += 1
 
             num_start = row

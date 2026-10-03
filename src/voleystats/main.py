@@ -1,14 +1,22 @@
 import click
 import json
+import logging
 from pathlib import Path
+from typing import Any, Optional
 
-from voleystats import parser, stats_manager, graphs
+from voleystats.scout import parser, scout_reader
 from voleystats.excel_report import ExcelReport, Sheet, Teams
 from voleystats.config import Config
 
 # debug
-from voleystats.data_classes import *
-from random import choice
+from voleystats.scout.models import *
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(levelname)s] %(filename)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -68,40 +76,55 @@ def voleystats(filename: str, excelfile: str, raw: Optional[str], home: Optional
     # }
     # # config = _load_config(CONFIG)
 
-    manager = stats_manager.StatsManager()
-    with config.input.open('r', encoding='utf-8') as f:
-        for line in f.read().split("\n"):
-            gameset = parser.re_gameset(line)
-            if gameset is not None:
-                manager.add_gameset(gameset)
+    scout = scout_reader.ScoutReader()
+    with config.input.open(encoding='utf-8') as file:
+        linecount = 0
+        for string in file:
+            linecount += 1
+            if not (string := string.strip()):
                 continue
 
-            change = parser.re_change(line)
-            if change is not None:
-                for c in change:
-                    manager.add_event(c)
+            match = parser.search_gameset(string)
+            if match is not None:
+                gameset = GameSet(name=match)
+                scout.add_gameset(gameset)
                 continue
 
-            timeout = parser.re_timeout(line)
-            if timeout is not None:
-                manager.add_event(timeout)
+            match = parser.search_changes(linecount, string)
+            if match is not None:
+                team, changes = match
+                score = scout.score
+                for num_out, num_in in changes:
+                    change = Change(team=team, score=score, num_out=num_out, num_in=num_in)
+                    scout.add_technical(change)
                 continue
 
-            rotation = parser.re_rotation(line)
-            if rotation is not None:
-                manager.set_rotation(rotation)
+            match = parser.search_timeout(linecount, string)
+            if match is not None:
+                scout.add_technical(Timeout(team=match, score=scout.score))
                 continue
-            
-            manager.add_codes(parser.re_code(line))
-            
-            point = parser.re_point(line)
-            if point is not None:
-                manager.add_point(point)
-    
-    with ExcelReport(config.excelfile, manager.asdataframe(), config.team) as excel:
+
+            match = parser.search_rotation(linecount, string)
+            if match is not None:
+                scout.update_rotation(*match)
+                continue
+
+            match = parser.search_rally(linecount, string)
+            if match is None:
+                continue
+            if actions := parser.search_actions(linecount, match[0]):
+                point = Point(team=match[1], score=scout.score, gameset_id=scout.gameset_id)
+                rally = Rally(actions=actions, point=point, rotation=scout.rotation)
+                scout.add_rally(rally)
+                scout.add_point(point)
+            else:
+                parser.Logger.actions_not_found(linecount, string)
+
+
+    with ExcelReport(config.excelfile, scout.asdataframe(), config.team) as excel:
         if (rawfile := config.raw):
             with rawfile.open('w', encoding='utf-8') as f:
-                f.write(str(manager))
+                f.write(str(scout))
 
         excel.build_worksheet_data()
         excel.build_worksheet_data('home')
@@ -118,18 +141,6 @@ def voleystats(filename: str, excelfile: str, raw: Optional[str], home: Optional
         
         excel.build_worksheet_objetives()
         return
-
-        # for item in excel.counts:
-        #     print(item)
-
-        # fig = graphs.CourtPlot("Distribución de ataque")
-        # # for e in list(NmonHit):
-        # #     fig.plot_marker(e, NmonExt.NONE, choice(list(NmonZone)[:-1]))
-        # for e in list(NmonExt)[:-1]:
-        #     fig.plot_marker(NmonHit.HIGH, e, choice(list(NmonZone)[:-1]))
-        # # fig.plot()
-        # # fig.savefig(TMP/"test_fig.png")
-        # excel.insert_chart(fig.savefig_bytes())
 
 
 
