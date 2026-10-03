@@ -1,0 +1,52 @@
+{
+    "global": {
+        "total": "TOTAL",
+        "bar1": "Comparación de errores",
+        "headers": ["Jugador", "Habilidad", "Ext."]
+    },
+    "summary": {
+        "sheet": "PARTIDO",
+        "lead": "Equipo",
+        "names": {
+            "home": "Local",
+            "away": "Visitante"
+        },
+        "pie1": "Distribución de ataque después de recepción: {team}"
+    },
+    "data": {
+        "sheet": {
+            "home": "LOCAL",
+            "away": "VISITANTE"
+        },
+        "lead": "Jugador",
+        "headers": ["Set", "Habilidad"]
+    },
+    "attack": {
+        "sheet": {
+            "home": "LOCAL - ATQ",
+            "away": "VISITANTE - ATQ"
+        },
+        "pie1": "Distribución de ataque: {name}",
+        "court1": "Ataques de {name} por zona {net}",
+        "court2": " --- PRIORIDAD DE ZAGUERO"
+    },
+    "serve": {
+        "sheet": {
+            "home": "LOCAL - SAQ",
+            "away": "VISITANTE - SAQ"
+        },
+        "pie1": "Total de saques: {name}",
+        "pie2": "Saques tipo {hit!r}: {name}"
+    },
+    "receive": {
+        "sheet": {
+            "home": "LOCAL - RECE",
+            "away": "VISITANTE - RECE"
+        },
+        "pie1": "Valoración recepción: {name}",
+        "pie2": "Valoración de recepción {hit!r}: {name}",
+        "bar1": "Valoración de repeción de {name} por sacador rival",
+        "pie3": "Recepción en zona {zone}: {name}"
+    },
+    "objetives": {}
+}

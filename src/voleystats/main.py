@@ -66,6 +66,8 @@ def voleystats(filename: str, excelfile: str, raw: Optional[str], home: Optional
 
 
     # DEBUG
+    # voleystats voleystats_example.txt excel_example.xlsx --home cvr_2526.json
+    
     # dbug_filename = CODES[int(filename)]
     # dbug_excelfile = EXCEL
     # if dbug_excelfile.exists():
@@ -139,7 +141,7 @@ def voleystats(filename: str, excelfile: str, raw: Optional[str], home: Optional
         excel.build_worksheet_receive('home')
         excel.build_worksheet_receive('away')
         
-        excel.build_worksheet_objetives()
+        # excel.build_worksheet_objetives()
         return
 
 

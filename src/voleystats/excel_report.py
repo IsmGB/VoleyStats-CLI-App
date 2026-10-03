@@ -86,7 +86,7 @@ class ExcelReport:
     }
     
 
-    def __init__(self, excelfile: Path, df: pd.DataFrame, players: dict[str, dict[int,dict[str,str]]|None]={}):
+    def __init__(self, excelfile: Path, df: pd.DataFrame, players: dict[str, dict[int,dict[str,str]]|None]={}, texts: Any=None):
         def import_df(df: pd.DataFrame) -> pd.DataFrame:
             df = df[['set', 'team', 'player', 'skill', 'hit', 'value', 'ext', 'zone', 'zHome', 'zAway']]
             df['team'] = df['team'].replace({e.value: e.name.lower() for e in NmonTeam})
@@ -129,6 +129,10 @@ class ExcelReport:
         def get_eff_value_list() -> list[str]:
             value_headers = [(v, f'%{v}') for v in self._value_symbols]
             return ["Tot.", "%Eff.", *[x for y in value_headers for x in y]]
+        
+        if texts is None:
+            raise ValueError("Language could not be loaded.")
+        self.TEXTS = texts
     
         self.excelfile = excelfile
         self.df = import_df(df)
@@ -243,18 +247,18 @@ class ExcelReport:
         
         # Worksheet setup
         if ws_team is None:
-            ws_name = Sheet.SUMMARY
-            lead = 'Team'
+            ws_name = self.TEXTS['summary']['sheet']
+            lead = self.TEXTS['summary']['lead']
             data = {team: self.groups[team][team] for team in ('home', 'away')}
-            names = {'home': 'Home', 'away': 'Away'}
+            names = self.TEXTS['summary']['names']
         elif ws_team == 'home':
-            ws_name = Sheet.HOME_DATA
-            lead = 'Player'
+            ws_name = self.TEXTS['data']['sheet']['home']
+            lead = self.TEXTS['summary']['lead']
             data = self.groups[ws_team]['num']
             names = self.players[ws_team]
         elif ws_team == 'away':
-            ws_name = Sheet.AWAY_DATA
-            lead = 'Player'
+            ws_name = self.TEXTS['data']['sheet']['away']
+            lead = self.TEXTS['summary']['lead']
             data = self.groups[ws_team]['num']
             names = self.players[ws_team]
         else:
@@ -267,7 +271,7 @@ class ExcelReport:
         # Write worksheet
         row, merge_key, merge_s = 0, 1, 1
         for key, data_df in data.items():
-            self._write_header(worksheet, row, 0, [lead, "Set", "Skill", *self._eff_header], frmt['header'])
+            self._write_header(worksheet, row, 0, [lead, *self.TEXTS['data']['headers'], *self._eff_header], frmt['header'])
             row += 1
             key = cast(Any, key)
             name = names.get(key, key)
@@ -297,7 +301,7 @@ class ExcelReport:
                 )
                 fig_pie.clear_axes()
                 fig_pie.make_pie(attack_df.tolist(), [self.players[team].get(n, str(n)) for n in attack_df.index], ExcelReport.COLORS['players'][:len(attack_df.index)])
-                fig_pie.set_title(f"Attack distribution after receive: {team.upper()}")
+                fig_pie.set_title(self.TEXTS['summary']['pie1'].format(team=team.upper()))
                 self._insert_image(ws, row, col, fig_pie.save_bytes(), 0.9)
             
             # Plot attack after receive pie chart
@@ -332,7 +336,7 @@ class ExcelReport:
                 vspace=1.5
             )
             fig_bar.set_axes('horizontal_bars')
-            fig_bar.set_title("Error comparison")
+            fig_bar.set_title(self.TEXTS['global']['bar1'])
             self._insert_image(worksheet, row, 18, fig_bar.save_bytes())
 
         elif ws_team in ('home', 'away'):
@@ -363,7 +367,7 @@ class ExcelReport:
                 vspace=2
             )
             fig_bar.set_axes('horizontal_bars')
-            fig_bar.set_title('Error comparison')
+            fig_bar.set_title(self.TEXTS['global']['bar1'])
             self._insert_image(worksheet, 1, 18, fig_bar.save_bytes())
 
 
@@ -373,9 +377,10 @@ class ExcelReport:
         frmt, frmts = self.formats, self.formats_list
         fig_court = CourtFigure()
         fig_pie = PieFigure()
+        texts = self.TEXTS['attack']
 
         skill = NmonSkill.ATTACK
-        columns = ["Player", "Hit", "Ext.", *self._eff_header]
+        columns = [*self.TEXTS['global']['headers'], *self._eff_header]
         distribution: dict[int, set[NmonExt]] = {
             2: {NmonExt.X1, NmonExt.X2, NmonExt.X8, NmonExt.K9},
             3: {NmonExt.X3, NmonExt.X6, NmonExt.X9, NmonExt.K1, NmonExt.K2, NmonExt.K3, NmonExt.K4, NmonExt.K5, NmonExt.K6, NmonExt.K7, NmonExt.K8},
@@ -383,7 +388,7 @@ class ExcelReport:
         } # ext classified by net side
         tip_ext = {NmonExt.X7, NmonExt.X8, NmonExt.K8} # ext considered as soft attacks
         # Worksheet setup
-        ws_name = Sheet.HOME_ATTACK if ws_team=='home' else (Sheet.AWAY_ATTACK if ws_team=='away' else '') # CHECK 3RD CASE
+        ws_name = texts['sheet'][ws_team]
         data: dict[Scalar, pd.DataFrame] = self.groups[ws_team]['num']
         names: dict[Any, str] = self.players[ws_team]
         worksheet = self._new_worksheet(ws_name)
@@ -429,7 +434,7 @@ class ExcelReport:
                 continue
             fig_pie.clear_axes()
             fig_pie.make_pie_hit(pie_sum.tolist(), pie_df.index.tolist())
-            fig_pie.set_title(f"Attack distribution player {name}")
+            fig_pie.set_title(texts['pie1'].format(name=name))
             self._insert_image(worksheet, row, 1, fig_pie.save_bytes(), 0.9, (10, 0))
 
             # Plot attack direction percents
@@ -456,11 +461,11 @@ class ExcelReport:
                 ext_counts = ext_df.groupby('ext')['count'].sum()
                 min_reps_defender = ExcelReport.MIN_REPS['attack_defender']
                 if ext_counts.get(NmonExt.X1, 0) > min_reps_defender or ext_counts.get(NmonExt.X6, 0) > min_reps_defender:
-                    title = f"Attacks by {name} from {net} --- DEFENDER ATTACK PRIORITY"
+                    title = texts['court1'].format(name=name, net=net) + texts['court2']
                     # fig_court.figure.patch.set_facecolor(ExcelReport.COLORS['court_bg'][0])
                     highlight = True
                 else:
-                    title = f"Attacks by {name} from {net}"
+                    title = texts['court1'].format(name=name, net=net)
                     # fig_court.figure.patch.set_facecolor(ExcelReport.COLORS['court_bg'][1])
                     highlight = False
 
@@ -491,11 +496,12 @@ class ExcelReport:
         symbols = self._value_symbols
         frmt, frmts = self.formats, self.formats_list
         fig_pie = PieFigure()
+        texts = self.TEXTS['serve']
         
         skill = NmonSkill.SERVE
-        columns = ["Player", "Hit", "Ext.", *self._eff_header]
+        columns = [*self.TEXTS['global']['headers'], *self._eff_header]
         # Worksheet setup
-        ws_name = Sheet.HOME_SERVE if ws_team=='home' else (Sheet.AWAY_SERVE if ws_team=='away' else "") # CHECK 3RD CASE
+        ws_name = texts['sheet'][ws_team]
         data: dict[Scalar, pd.DataFrame] = self.groups[ws_team]['num']
         names: dict[Any, str] = self.players[ws_team]
         worksheet = self._new_worksheet(ws_name)
@@ -532,7 +538,7 @@ class ExcelReport:
             pie_col = 1
             fig_pie.clear_axes()
             fig_pie.make_pie(total_serve.tolist(), symbols, ExcelReport.COLORS['symbols'])
-            fig_pie.set_title(f"TOTAL serves: {name}")
+            fig_pie.set_title(texts['pie1'].format(name=name))
             self._insert_image(worksheet, row, pie_col, fig_pie.save_bytes(), 0.9, (10, 0))
             pie_col += 6
             # Plot pie chart for each type of serve
@@ -542,7 +548,7 @@ class ExcelReport:
                         continue
                     fig_pie.clear_axes()
                     fig_pie.make_pie(values, symbols, ExcelReport.COLORS['symbols'])
-                    fig_pie.set_title(f"{hit.name} serves: {name}")
+                    fig_pie.set_title(texts['pie2'].format(hit=hit.name, name=name))
                     self._insert_image(worksheet, row, pie_col, fig_pie.save_bytes(), 0.9, (10, 0))
                     pie_col += 6
             row += 15
@@ -557,12 +563,14 @@ class ExcelReport:
         frmt, frmts = self.formats, self.formats_list
         fig_pie = PieFigure()
         fig_bar = BarFigure()
+        texts = self.TEXTS['receive']
 
+        ws_name = texts['sheet'][ws_team]
         if ws_team == 'home':
-            ws_name = Sheet.HOME_RECEIVE
+            # ws_name = Sheet.HOME_RECEIVE
             names_enemy: dict[Any, str] = self.players['away']
         elif ws_team == 'away':
-            ws_name = Sheet.AWAY_RECEIVE
+            # ws_name = Sheet.AWAY_RECEIVE
             names_enemy: dict[Any, str] = self.players['home']
         else:
             raise ValueError(f"ws_name must be Sheet.{Sheet.HOME_RECEIVE} or Sheet.{Sheet.AWAY_RECEIVE}")
@@ -570,8 +578,8 @@ class ExcelReport:
         names: dict[Any, str] = self.players[ws_team]
 
         skill = NmonSkill.RECEIVE
-        columns = ["Player", "Rotation", "Hit", *self._eff_header]
-        rotation = 'home_rot' if ws_name == Sheet.HOME_RECEIVE else 'away_rot'
+        columns = [*self.TEXTS['global']['headers'], *self._eff_header]
+        rotation = 'home_rot' if ws_team == 'home' else 'away_rot'
         # Worksheet setup
         worksheet = self._new_worksheet(ws_name)
         worksheet.set_column(0, 0, self._get_fit_width(list(names.values())))
@@ -630,7 +638,7 @@ class ExcelReport:
 
             fig_pie.clear_axes()
             fig_pie.make_pie(total_receive.tolist(), symbols, ExcelReport.COLORS['symbols'])
-            fig_pie.set_title(f"Receive values player {name}")
+            fig_pie.set_title(texts['pie1'].format(name=name))
             self._insert_image(worksheet, row, 1, fig_pie.save_bytes(), 0.9, (10, 0))
             # row += 18
         
@@ -640,7 +648,7 @@ class ExcelReport:
                     continue
                 fig_pie.clear_axes()
                 fig_pie.make_pie(values.tolist(), symbols, ExcelReport.COLORS['symbols'])
-                fig_pie.set_title(f"Receive values {hit.name} by player {name}")
+                fig_pie.set_title(texts['pie2'].format(hit=hit.name, name=name))
                 self._insert_image(worksheet, row, col, fig_pie.save_bytes(), 0.9)
                 col += 6
 
@@ -659,7 +667,7 @@ class ExcelReport:
                 hspace=2
             )
             fig_bar.set_axes('vertical_bars')
-            fig_bar.set_title(f"Valoración recepción de {name} para cada sacador rival")
+            fig_bar.set_title(texts['bar1'].format(name=name))
             self._insert_image(worksheet, row, col+1, fig_bar.save_bytes(), 0.8)
             row += 21
 
@@ -670,7 +678,7 @@ class ExcelReport:
                     continue
                 fig_pie.clear_axes()
                 fig_pie.make_pie(zone_values.tolist(), symbols, ExcelReport.COLORS['symbols'])
-                fig_pie.set_title(f"Receve in {NmonZone(zone).name} by player {name}")
+                fig_pie.set_title(texts['pie3'].format(zone=NmonZone(zone).name, name=name))
                 self._insert_image(worksheet, row, col, fig_pie.save_bytes(), 0.9, (10, 0))
                 col += 5
             if col > 1:
