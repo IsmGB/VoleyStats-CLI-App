@@ -64,13 +64,20 @@ class Technical(ABC):
         cls._home = 0
         cls._away = 0
     
+    def __getitem__(self, key: TeamEnum) -> int:
+        if key == TeamEnum.HOME:
+            return self.__class__._home
+        if key == TeamEnum.AWAY:
+            return self.__class__._away
+        return KeyError(key)
+    
     @abstractmethod
     def __repr__(self) -> str:
-        ...
+        pass
     
     @abstractmethod
     def __str__(self) -> str:
-        ...
+        pass
 
 
 
@@ -87,10 +94,9 @@ class Change(Technical):
     num_in: int
 
     def __post_init__(self) -> None:
-        if self._home >= self._MAX or self._away >= self._MAX:
+        if self[self.team] >= self._MAX:
             raise ChangeError(f"Maximum number of changes exceeded: {self._MAX}")
         super().__post_init__()
-
 
     def __repr__(self) -> str:
         return (
@@ -114,9 +120,9 @@ class TimeoutError(Exception):
 @dataclass(slots=True)
 class Timeout(Technical):
     _MAX: ClassVar[int] = 2
-
+    
     def __post_init__(self) -> None:
-        if self._home >= self._MAX or self._away >= self._MAX:
+        if self[self.team] >= self._MAX:
             raise TimeoutError(f"Maximum number of timeouts exceeded: {self._MAX}")
         super().__post_init__()
  

@@ -1,4 +1,13 @@
 from enum import StrEnum
+from typing import Literal, TypedDict, ClassVar
+
+
+type TeamKey = Literal['home', 'away']
+type RotationKey = Literal['zHome', 'zAway']
+
+class TeamsDict[T](TypedDict):
+    home: T
+    away: T
 
 
 class TeamEnum(StrEnum):
@@ -94,7 +103,22 @@ class ExtEnum(StrEnum):
     K7 = 'K7'
     K8 = 'K8'
     K9 = 'K9'
-    # NONE = ''
+
+    @classmethod
+    def get_distribution(cls) -> dict[int, set[ExtEnum]]:
+        return {
+            2: {cls.X1, cls.X2, cls.X8, cls.K9},
+            3: {
+                cls.X3, cls.X6, cls.X9, cls.K1,
+                cls.K2, cls.K3, cls.K4, cls.K5,
+                cls.K6, cls.K7, cls.K8
+            },
+            4: {cls.X4, cls.X5, cls.X7}
+        }
+    
+    @classmethod
+    def get_tips(cls) -> set[ExtEnum]:
+        return {cls.X7, cls.X8, cls.K8}
 
 
 class ZoneEnum(StrEnum):
@@ -107,4 +131,3 @@ class ZoneEnum(StrEnum):
     Z7 = 'Z7'
     Z8 = 'Z8'
     Z9 = 'Z9'
-    # NONE = ''
